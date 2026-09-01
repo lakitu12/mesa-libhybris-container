@@ -55,6 +55,7 @@ static struct vk_instance_extension_table *supported_instance_extensions;
 #endif
 
 #ifdef WRAPPER_USE_HYBRIS
+#include <dlfcn.h> /* RTLD_* flags (same values as bionic) */
 #include <hybris/common/dlfcn.h>
 #define WRAPPER_DLOPEN  hybris_dlopen
 #define WRAPPER_DLSYM   hybris_dlsym
