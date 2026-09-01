@@ -11,6 +11,11 @@ endif
 
 if with_wrapper_vk
   files_vulkan_wsi += files('wsi_common_ahardware_buffer.c')
+  if with_wrapper_hybris
+    # AHardwareBuffer_* entry points are proxied to the Android driver
+    # through libhybris by libahb-wrapper.
+    platform_deps += cc.find_library('ahb-wrapper', required: true)
+  endif
 endif
 
 if with_platform_x11

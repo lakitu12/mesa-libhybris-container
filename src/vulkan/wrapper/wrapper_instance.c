@@ -54,7 +54,17 @@ static struct vk_instance_extension_table *supported_instance_extensions;
 #define DEFAULT_VULKAN_PATH "/system/lib/libvulkan.so"
 #endif
 
+#ifdef WRAPPER_USE_HYBRIS
+#include <hybris/common/dlfcn.h>
+#define WRAPPER_DLOPEN  hybris_dlopen
+#define WRAPPER_DLSYM   hybris_dlsym
+#define WRAPPER_DLERROR hybris_dlerror
+#else
 #include <dlfcn.h>
+#define WRAPPER_DLOPEN  dlopen
+#define WRAPPER_DLSYM   dlsym
+#define WRAPPER_DLERROR dlerror
+#endif
 
 static bool vulkan_library_init()
 {
@@ -65,20 +75,20 @@ static bool vulkan_library_init()
                                       debug_control);
 
    const char *env = getenv("WRAPPER_VULKAN_PATH");
-   vulkan_library_handle = dlopen(env ? env : DEFAULT_VULKAN_PATH,
+   vulkan_library_handle = WRAPPER_DLOPEN(env ? env : DEFAULT_VULKAN_PATH,
                                   RTLD_LOCAL | RTLD_NOW);
 
    if (vulkan_library_handle) {
-      create_instance = dlsym(vulkan_library_handle, "vkCreateInstance");
-      get_instance_proc_addr = dlsym(vulkan_library_handle,
+      create_instance = WRAPPER_DLSYM(vulkan_library_handle, "vkCreateInstance");
+      get_instance_proc_addr = WRAPPER_DLSYM(vulkan_library_handle,
                                      "vkGetInstanceProcAddr");
-      enumerate_instance_version = dlsym(vulkan_library_handle,
+      enumerate_instance_version = WRAPPER_DLSYM(vulkan_library_handle,
                                          "vkEnumerateInstanceVersion");
       enumerate_instance_extension_properties =
-         dlsym(vulkan_library_handle, "vkEnumerateInstanceExtensionProperties");
+         WRAPPER_DLSYM(vulkan_library_handle, "vkEnumerateInstanceExtensionProperties");
    }
    else {
-      fprintf(stderr, "%s", dlerror());
+      fprintf(stderr, "%s", WRAPPER_DLERROR());
    }
 
    return vulkan_library_handle ? true : false;

@@ -216,6 +216,13 @@ option(
                 'will be built'
 )
 
+option(
+  'wrapper-hybris',
+  type : 'boolean',
+  value : false,
+  description : 'Load the Android Vulkan driver through libhybris (hybris_dlopen) and link AHardwareBuffer entry points to libahb-wrapper. Requires hybris headers/libraries at build time.'
+)
+
 # Note that the freedreno gallium driver doesn't support KGSL.
 # On those systems, zink with Turnip should be used instead.
 # WSL is only supported for the replay tool.

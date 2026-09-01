@@ -309,6 +309,7 @@ with_asahi_vk = _vulkan_drivers.contains('asahi')
 with_gfxstream_vk = _vulkan_drivers.contains('gfxstream')
 with_kosmickrisp_vk = _vulkan_drivers.contains('kosmickrisp')
 with_wrapper_vk = _vulkan_drivers.contains('wrapper')
+with_wrapper_hybris = with_wrapper_vk and get_option('wrapper-hybris')
 with_any_vk = _vulkan_drivers.length() != 0
 
 with_llvm = with_llvm \

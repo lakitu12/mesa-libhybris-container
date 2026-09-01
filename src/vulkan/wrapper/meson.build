@@ -81,6 +81,19 @@ wrapper_deps = [
   dep_android,
 ]
 
+wrapper_extra_deps = []
+wrapper_c_args = []
+if with_wrapper_hybris
+  # hybris_dlopen/hybris_dlsym live in libhybris-common; the AHardwareBuffer
+  # entry points used by the WSI come from libahb-wrapper (which proxies them
+  # to the Android libandroid.so through hybris).
+  wrapper_c_args += '-DWRAPPER_USE_HYBRIS'
+  wrapper_extra_deps += [
+    cc.find_library('hybris-common', required: true),
+    cc.find_library('ahb-wrapper', required: true),
+  ]
+endif
+
 libvulkan_wrapper = shared_library(
   'vulkan_wrapper',
   [wrapper_entrypoints, wrapper_trampolines, wrapper_features, wrapper_files],
@@ -88,7 +101,8 @@ libvulkan_wrapper = shared_library(
     inc_include,
     inc_src,
   ],
-  dependencies: [wrapper_deps, vulkan_wsi_deps],
+  c_args: wrapper_c_args,
+  dependencies: [wrapper_deps, vulkan_wsi_deps, wrapper_extra_deps],
   gnu_symbol_visibility: 'hidden',
   install: true,
 )
