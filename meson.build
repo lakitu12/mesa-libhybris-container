@@ -308,6 +308,7 @@ with_nouveau_vk = _vulkan_drivers.contains('nouveau')
 with_asahi_vk = _vulkan_drivers.contains('asahi')
 with_gfxstream_vk = _vulkan_drivers.contains('gfxstream')
 with_kosmickrisp_vk = _vulkan_drivers.contains('kosmickrisp')
+with_wrapper_vk = _vulkan_drivers.contains('wrapper')
 with_any_vk = _vulkan_drivers.length() != 0
 
 with_llvm = with_llvm \
@@ -988,9 +989,9 @@ endif
 pre_args += '-DGLAPI_EXPORT_PROTO_ENTRY_POINTS=@0@'.format(with_glapi_export_proto_entry_points.to_int())
 
 with_android_stub = get_option('android-stub')
-need_android_stub = with_platform_android or with_gfxstream_emulated_android
+need_android_stub = with_platform_android or with_gfxstream_emulated_android or with_wrapper_vk
 if with_android_stub and not need_android_stub
-  error('`-D android-stub=true` makes no sense without `-D platforms=android` or emulated Android')
+  error('`-D android-stub=true` makes no sense without `-D platforms=android`, emulated Android, or the Vulkan wrapper')
 endif
 
 with_libbacktrace = get_option('android-libbacktrace') \

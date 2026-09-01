@@ -27,6 +27,15 @@
 #include <unistd.h>
 #include <cutils/compiler.h>
 
+#ifdef __cplusplus
+/* glibc's <stdatomic.h> only provides the _Atomic macros in C++; alias the
+ * C++ standard library types so this bionic header keeps compiling. Under
+ * bionic these names already exist with the same meaning. */
+#include <atomic>
+using std::atomic_bool;
+using std::atomic_uint_fast64_t;
+#endif
+
 __BEGIN_DECLS
 
 /**

@@ -27,7 +27,11 @@ typedef const native_handle_t *buffer_handle_t;
 
 #else
 
-typedef void *buffer_handle_t;
+/* Match AOSP's cutils/native_handle.h so that TUs which also include the
+ * Android headers (e.g. through the android_stub) don't get conflicting
+ * typedefs. */
+struct native_handle;
+typedef const struct native_handle *buffer_handle_t;
 
 #endif
 

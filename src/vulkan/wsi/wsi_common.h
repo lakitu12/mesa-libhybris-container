@@ -161,6 +161,9 @@ struct wsi_device {
 
    bool sw;
 
+   bool wants_ahardware_buffer;
+   bool needs_blit;
+
    /* Set to true if the implementation is ok with linear WSI images. */
    bool wants_linear;
 
@@ -244,6 +247,8 @@ struct wsi_device {
    WSI_CB(GetPhysicalDeviceQueueFamilyProperties);
    WSI_CB(GetQueryPoolResults);
    WSI_CB(GetSemaphoreFdKHR);
+   WSI_CB(ImportSemaphoreFdKHR);
+   WSI_CB(ImportFenceFdKHR);
    WSI_CB(ResetFences);
    WSI_CB(QueueSubmit2);
    WSI_CB(SetDebugUtilsObjectNameEXT);
@@ -251,6 +256,10 @@ struct wsi_device {
    WSI_CB(MapMemory);
    WSI_CB(UnmapMemory);
    WSI_CB(WaitSemaphores);
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+   WSI_CB(GetMemoryAndroidHardwareBufferANDROID);
+   WSI_CB(GetAndroidHardwareBufferPropertiesANDROID);
+#endif
 #undef WSI_CB
 
     struct wsi_interface *                  wsi[VK_ICD_WSI_PLATFORM_MAX];

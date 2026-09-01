@@ -48,6 +48,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+#include <android/hardware_buffer.h>
+#endif
+
 uint64_t WSI_DEBUG;
 
 static const struct debug_control debug_control[] = {
@@ -57,6 +61,7 @@ static const struct debug_control debug_control[] = {
    { "linear",       WSI_DEBUG_LINEAR },
    { "dxgi",         WSI_DEBUG_DXGI },
    { "nowlts",       WSI_DEBUG_NOWLTS },
+   { "blit",         WSI_DEBUG_BLIT },
    { NULL, },
 };
 
@@ -104,11 +109,18 @@ wsi_device_init(struct wsi_device *wsi,
    wsi->pci_bus_info.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
    wsi->pci_bus_info.pNext = &wsi->drm_info;
-   VkPhysicalDeviceProperties2 pdp2 = {
-      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+   VkPhysicalDeviceDriverProperties pddp = {
+      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
       .pNext = &wsi->pci_bus_info,
    };
+   VkPhysicalDeviceProperties2 pdp2 = {
+      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+      .pNext = &pddp,
+   };
    GetPhysicalDeviceProperties2(pdevice, &pdp2);
+
+   if (pddp.driverID == VK_DRIVER_ID_ARM_PROPRIETARY)
+      wsi->needs_blit = true;
 
    wsi->maxImageDimension2D = pdp2.properties.limits.maxImageDimension2D;
    assert(pdp2.properties.limits.optimalBufferCopyRowPitchAlignment <= UINT32_MAX);
@@ -225,6 +237,8 @@ wsi_device_init(struct wsi_device *wsi,
    WSI_GET_CB(GetCalibratedTimestampsKHR);
    WSI_GET_CB(GetQueryPoolResults);
    WSI_GET_CB(GetSemaphoreFdKHR);
+   WSI_GET_CB(ImportSemaphoreFdKHR);
+   WSI_GET_CB(ImportFenceFdKHR);
    WSI_GET_CB(ResetFences);
    WSI_GET_CB(QueueSubmit2);
    WSI_GET_CB(SetDebugUtilsObjectNameEXT);
@@ -233,6 +247,10 @@ wsi_device_init(struct wsi_device *wsi,
    WSI_GET_CB(UnmapMemory);
    if (wsi->has_present_wait)
       WSI_GET_CB(WaitSemaphores);
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+   WSI_GET_CB(GetMemoryAndroidHardwareBufferANDROID);
+   WSI_GET_CB(GetAndroidHardwareBufferPropertiesANDROID);
+#endif
 #undef WSI_GET_CB
 
 #if defined(VK_USE_PLATFORM_XCB_KHR)
@@ -404,6 +422,11 @@ get_blit_type(const struct wsi_device *wsi,
       return wsi_cpu_image_needs_buffer_blit(wsi, cpu_params) ?
          WSI_SWAPCHAIN_BUFFER_BLIT : WSI_SWAPCHAIN_NO_BLIT;
    }
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+   case WSI_IMAGE_TYPE_AHB: {
+      return wsi_get_ahardware_buffer_blit_type(wsi, params, device);
+   }
+#endif
 #ifdef HAVE_LIBDRM
    case WSI_IMAGE_TYPE_DRM: {
       const struct wsi_drm_image_params *drm_params =
@@ -454,6 +477,11 @@ configure_image(const struct wsi_swapchain *chain,
          container_of(params, const struct wsi_cpu_image_params, base);
       return wsi_configure_cpu_image(chain, pCreateInfo, cpu_params, info);
    }
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+   case WSI_IMAGE_TYPE_AHB: {
+      return wsi_configure_ahardware_buffer_image(chain, pCreateInfo, params, info);
+   }
+#endif
 #ifdef HAVE_LIBDRM
    case WSI_IMAGE_TYPE_DRM: {
       const struct wsi_drm_image_params *drm_params =
@@ -821,6 +849,12 @@ wsi_destroy_image_info(const struct wsi_swapchain *chain,
       vk_free(&chain->alloc, info->modifier_props);
       info->modifier_props = NULL;
    }
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+   if (info->ahardware_buffer_desc != NULL) {
+      vk_free(&chain->alloc, info->ahardware_buffer_desc);
+      info->ahardware_buffer_desc = NULL;
+   }
+#endif
 }
 
 VkResult
@@ -964,6 +998,11 @@ wsi_destroy_image(const struct wsi_swapchain *chain,
                   struct wsi_image *image)
 {
    const struct wsi_device *wsi = chain->wsi;
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+   if (image->ahardware_buffer)
+      AHardwareBuffer_release(image->ahardware_buffer);
+#endif
 
 #ifndef _WIN32
    if (image->dma_buf_fd >= 0)
@@ -1869,8 +1908,16 @@ wsi_signal_semaphore_for_image(struct vk_device *device,
                                const struct wsi_image *image,
                                VkSemaphore _semaphore)
 {
-   if (device->physical->supported_sync_types == NULL)
-      return VK_SUCCESS;
+   if (device->physical->supported_sync_types == NULL) {
+      const VkImportSemaphoreFdInfoKHR import_fd_info = {
+         .sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
+         .semaphore = _semaphore,
+         .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
+         .fd = -1,
+         .flags = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT,
+      };
+      return chain->wsi->ImportSemaphoreFdKHR(chain->device, &import_fd_info);
+   }
 
    VK_FROM_HANDLE(vk_semaphore, semaphore, _semaphore);
 
@@ -1899,8 +1946,16 @@ wsi_signal_fence_for_image(struct vk_device *device,
                            const struct wsi_image *image,
                            VkFence _fence)
 {
-   if (device->physical->supported_sync_types == NULL)
-      return VK_SUCCESS;
+   if (device->physical->supported_sync_types == NULL) {
+      const VkImportFenceFdInfoKHR import_fd_info = {
+         .sType = VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR,
+         .fence = _fence,
+         .handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
+         .fd = -1,
+         .flags = VK_FENCE_IMPORT_TEMPORARY_BIT,
+      };
+      return chain->wsi->ImportFenceFdKHR(chain->device, &import_fd_info);
+   }
 
    VK_FROM_HANDLE(vk_fence, fence, _fence);
 

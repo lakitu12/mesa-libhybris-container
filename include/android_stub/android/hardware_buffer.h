@@ -49,6 +49,7 @@
 
 #include <sys/cdefs.h>
 
+#include <android/versioning.h>
 #include <android/rect.h>
 
 __BEGIN_DECLS

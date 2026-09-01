@@ -35,6 +35,7 @@
 
 #include <stdint.h>
 #include <sys/cdefs.h>
+#include <android/versioning.h>
 
 #include <android/data_space.h>
 #include <android/hardware_buffer.h>

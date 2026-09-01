@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <sys/cdefs.h>
 
+#include <android/versioning.h>
 #include <linux/sync_file.h>
 
 __BEGIN_DECLS
