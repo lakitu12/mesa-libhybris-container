@@ -78,8 +78,14 @@ wrapper_deps = [
   idep_vulkan_lite_runtime,
   idep_vulkan_util,
   idep_vulkan_wsi,
-  dep_android,
 ]
+if not with_wrapper_hybris
+  # In hybris mode the AHardwareBuffer entry points come from libahb-wrapper
+  # (proxying the Android driver through libhybris); linking the android_stub
+  # DSOs would both add unusable DT_NEEDED entries and shadow the real
+  # implementations with stub no-ops.
+  wrapper_deps += dep_android
+endif
 
 wrapper_extra_deps = []
 wrapper_c_args = []
