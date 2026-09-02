@@ -2707,6 +2707,9 @@ x11_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
 #endif
    struct wsi_base_image_params *image_params = NULL;
    struct wsi_cpu_image_params cpu_image_params;
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+   struct wsi_base_image_params ahb_image_params;
+#endif
    uint64_t *modifiers[2] = {NULL, NULL};
    if (wsi_device->sw) {
       cpu_image_params = (struct wsi_cpu_image_params) {
@@ -2716,9 +2719,14 @@ x11_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
       image_params = &cpu_image_params.base;
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
    } else if (wsi_device->wants_ahardware_buffer) {
-      image_params = &(struct wsi_base_image_params){
+      /* Must outlive this block: image_params is consumed by
+       * wsi_swapchain_init() below, so a block-scoped compound literal
+       * would dangle. Use a named variable (same as cpu/drm params).
+       */
+      ahb_image_params = (struct wsi_base_image_params){
          .image_type = WSI_IMAGE_TYPE_AHB,
       };
+      image_params = &ahb_image_params;
 #endif
    } else {
 #ifdef HAVE_X11_DRM

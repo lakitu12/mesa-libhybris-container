@@ -159,7 +159,13 @@ VkResult enumerate_physical_device(struct vk_instance *_instance)
       pdevice->vk.wsi_device = &pdevice->wsi_device;
       pdevice->wsi_device.force_bgra8_unorm_first = true;
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
-      pdevice->wsi_device.wants_ahardware_buffer = true;
+      /* AHB-backed X11 swapchain images require a working AHardwareBuffer
+       * bridge (libahb-wrapper -> hybris -> libandroid.so).  Set
+       * WRAPPER_DISABLE_AHB=1 to fall back to the normal X11 image path
+       * when that bridge is broken on the host.
+       */
+      pdevice->wsi_device.wants_ahardware_buffer =
+         getenv("WRAPPER_DISABLE_AHB") == NULL;
 #endif
 
       pdevice->driver_properties = (VkPhysicalDeviceDriverProperties) {
