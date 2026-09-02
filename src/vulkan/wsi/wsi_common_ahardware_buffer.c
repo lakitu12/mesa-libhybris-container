@@ -309,6 +309,11 @@ wsi_configure_ahardware_buffer_image(
    if (result != VK_SUCCESS)
       return result;
 
+   /* wsi_configure_image() memsets info; configure_image() assigned
+    * image_type before dispatching here, so restore it or the blit
+    * helpers see WSI_IMAGE_TYPE_CPU (0). */
+   info->image_type = WSI_IMAGE_TYPE_AHB;
+
    VkPhysicalDeviceExternalImageFormatInfo external_format_info = {
       .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
       .pNext = NULL,

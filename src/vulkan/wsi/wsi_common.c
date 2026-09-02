@@ -2885,6 +2885,16 @@ wsi_create_buffer_blit_context(const struct wsi_swapchain *chain,
 static void
 wsi_label_cmd_buffer(const struct wsi_device *wsi, VkDevice device, VkCommandBuffer cmd_buffer, const char *name)
 {
+   /* The wrapper ICD blocks VK_EXT_debug_utils from its supported
+    * extension set; WSI_GET_CB(SetDebugUtilsObjectNameEXT) then resolves
+    * through wrapper_wsi_proc_addr() to a stub that jumps to a NULL
+    * driver dispatch slot, crashing vkCreateSwapchainKHR.  The name is
+    * debug-only metadata: set WRAPPER_NO_WSI_LABEL=1 to skip labeling,
+    * and also guard against a plain NULL pointer.
+    */
+   if (!wsi->SetDebugUtilsObjectNameEXT || getenv("WRAPPER_NO_WSI_LABEL"))
+      return;
+
    VkDebugUtilsObjectNameInfoEXT name_info = {
       .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
       .pNext = NULL,
@@ -2988,7 +2998,12 @@ wsi_cmd_blit_image_to_image(VkCommandBuffer cmd_buffer,
                             const struct wsi_image_info *info,
                             struct wsi_image *image)
 {
-   assert(info->image_type == WSI_IMAGE_TYPE_DXGI);
+   /* The wrapper+hybris X11 path selects WSI_SWAPCHAIN_IMAGE_BLIT for
+    * AHB-backed images (wsi_get_ahardware_buffer_blit_type), so AHB is a
+    * legal source type for this generic image->image blit, not just DXGI.
+    */
+   assert(info->image_type == WSI_IMAGE_TYPE_DXGI ||
+          info->image_type == WSI_IMAGE_TYPE_AHB);
 
    VkImageMemoryBarrier img_mem_barriers[2] = {
       {
