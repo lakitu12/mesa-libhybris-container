@@ -159,13 +159,17 @@ VkResult enumerate_physical_device(struct vk_instance *_instance)
       pdevice->vk.wsi_device = &pdevice->wsi_device;
       pdevice->wsi_device.force_bgra8_unorm_first = true;
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
-      /* AHB-backed X11 swapchain images require a working AHardwareBuffer
-       * bridge (libahb-wrapper -> hybris -> libandroid.so).  Set
-       * WRAPPER_DISABLE_AHB=1 to fall back to the normal X11 image path
-       * when that bridge is broken on the host.
+      /* See wsi_common_x11.c: the AHB-backed X11 swapchain handshakes
+       * the buffer over a socketpair with a TERMUX-PATCHED X server.
+       * Against a stock Xorg (e.g. termux-x11 app) that read() never
+       * returns.  WRAPPER_X11_SW=1 forces the CPU image path instead
+       * (MIT-SHM/XImage present, works with any X server).
        */
-      pdevice->wsi_device.wants_ahardware_buffer =
-         getenv("WRAPPER_DISABLE_AHB") == NULL;
+      if (getenv("WRAPPER_X11_SW"))
+         pdevice->wsi_device.sw = true;
+      else
+         pdevice->wsi_device.wants_ahardware_buffer =
+            getenv("WRAPPER_DISABLE_AHB") == NULL;
 #endif
 
       pdevice->driver_properties = (VkPhysicalDeviceDriverProperties) {
