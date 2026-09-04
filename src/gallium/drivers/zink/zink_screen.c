@@ -3494,8 +3494,15 @@ zink_internal_create_screen(const struct pipe_screen_config *config, int64_t dev
    }
 
    if (!screen->info.rb2_feats.nullDescriptor) {
-      mesa_loge("Zink requires the nullDescriptor feature of KHR/EXT robustness2.");
-      goto fail;
+      /* dash-container hack: the Android Mali blob (r49) lacks
+       * VK_EXT_robustness2 -> nullDescriptor=false. LAZY descriptor mode
+       * writing VK_NULL_HANDLE buffers/views is UB without it, but the
+       * release blob tolerates it; let ZINK_ALLOW_NO_NULLDESC=1 bypass. */
+      if (!debug_get_num_option("ZINK_ALLOW_NO_NULLDESC", 0)) {
+         mesa_loge("Zink requires the nullDescriptor feature of KHR/EXT robustness2.");
+         goto fail;
+      }
+      mesa_loge("Zink: nullDescriptor missing, bypassed via ZINK_ALLOW_NO_NULLDESC\n");
    }
 
    if (zink_set_driver_strings(screen)) {
