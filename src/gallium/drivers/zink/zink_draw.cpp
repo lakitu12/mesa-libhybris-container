@@ -130,7 +130,7 @@ zink_bind_vertex_buffers(struct zink_context *ctx)
          buffers[i] = res->obj->buffer;
          buffer_offsets[i] = vb->buffer_offset;
       } else {
-         buffers[i] = VK_NULL_HANDLE;
+         buffers[i] = zink_resource(ctx->dummy_vertex_buffer)->obj->buffer;
          buffer_offsets[i] = 0;
       }
    }

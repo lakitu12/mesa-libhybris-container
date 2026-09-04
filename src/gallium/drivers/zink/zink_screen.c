@@ -3493,18 +3493,6 @@ zink_internal_create_screen(const struct pipe_screen_config *config, int64_t dev
       goto fail;
    }
 
-   if (!screen->info.rb2_feats.nullDescriptor) {
-      /* dash-container hack: the Android Mali blob (r49) lacks
-       * VK_EXT_robustness2 -> nullDescriptor=false. LAZY descriptor mode
-       * writing VK_NULL_HANDLE buffers/views is UB without it, but the
-       * release blob tolerates it; let ZINK_ALLOW_NO_NULLDESC=1 bypass. */
-      if (!debug_get_num_option("ZINK_ALLOW_NO_NULLDESC", 0)) {
-         mesa_loge("Zink requires the nullDescriptor feature of KHR/EXT robustness2.");
-         goto fail;
-      }
-      mesa_loge("Zink: nullDescriptor missing, bypassed via ZINK_ALLOW_NO_NULLDESC\n");
-   }
-
    if (zink_set_driver_strings(screen)) {
       mesa_loge("ZINK: failed to set driver strings\n");
       goto fail;
@@ -3740,6 +3728,14 @@ zink_internal_create_screen(const struct pipe_screen_config *config, int64_t dev
          if (zink_descriptor_mode == ZINK_DESCRIPTOR_MODE_DB) {
             if (!screen->driver_name_is_inferred)
                mesa_loge("Cannot use db descriptor mode without EXT_non_seamless_cube_map");
+            goto fail;
+         }
+         can_db = false;
+      }
+      if (!screen->info.rb2_feats.nullDescriptor) {
+         if (zink_descriptor_mode == ZINK_DESCRIPTOR_MODE_DB) {
+            if (!screen->driver_name_is_inferred)
+               mesa_loge("Cannot use db descriptor mode without robustness2.nullDescriptor");
             goto fail;
          }
          can_db = false;

@@ -1896,7 +1896,14 @@ struct zink_context {
       uint64_t render_passes;
    } hud;
 
+   struct pipe_resource *dummy_vertex_buffer;
    struct pipe_resource *dummy_xfb_buffer;
+   /* 26.1.6: zink_surface is no longer a pipe_surface subclass
+    * ({key, image_view}, cache-owned by the backing resource).
+    * Dummy views are borrowed from the surface cache of these backing
+    * resources; freeing the resource frees its cached views. */
+   struct pipe_resource *dummy_fbo[7];
+   struct zink_buffer_view *dummy_bufferview;
 
    unsigned buffer_rebind_counter;
    unsigned image_rebind_counter;

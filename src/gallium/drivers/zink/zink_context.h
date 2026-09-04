@@ -311,6 +311,21 @@ zink_copy_image_buffer(struct zink_context *ctx, struct zink_resource *dst, stru
                        unsigned buffer_layer_stride,
                        unsigned level, const struct pipe_box *src_box, enum pipe_map_flags map_flags);
 
+struct zink_surface *
+zink_get_dummy_surface(struct zink_context *ctx, int samples_index);
+
+/* 26.1.6: zink_buffer_view is owned by the resource's surface_cache hash
+ * (destroyed with the resource in zink_resource.c); no refcounting exists.
+ * The dummy just borrows the cached view for the ctx lifetime, so a plain
+ * assignment is the correct adaptation of the old reference helper. */
+static inline void
+zink_buffer_view_reference(struct zink_screen *screen,
+                           struct zink_buffer_view **dst,
+                           struct zink_buffer_view *src)
+{
+   (void)screen;
+   if (dst) *dst = src;
+}
 #endif
 
 #endif
