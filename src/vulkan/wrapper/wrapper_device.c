@@ -17,42 +17,42 @@
  * swapchain blit context (wsi_label_cmd_buffer) — a NULL jump without these.
  * No-op them locally: labels are debug-only metadata the blob would ignore
  * anyway. This makes WRAPPER_NO_WSI_LABEL unnecessary. */
-static VKAPI_ATTR VkResult VKAPI_CALL
+VKAPI_ATTR VkResult VKAPI_CALL
 wrapper_noop_SetDebugUtilsObjectNameEXT(VkDevice device,
                                         const VkDebugUtilsObjectNameInfoEXT *pNameInfo)
 {
    return VK_SUCCESS;
 }
 
-static VKAPI_ATTR void VKAPI_CALL
+VKAPI_ATTR void VKAPI_CALL
 wrapper_noop_CmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer,
                                        const VkDebugUtilsLabelEXT *pLabelInfo)
 {
 }
 
-static VKAPI_ATTR void VKAPI_CALL
+VKAPI_ATTR void VKAPI_CALL
 wrapper_noop_CmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer)
 {
 }
 
-static VKAPI_ATTR void VKAPI_CALL
+VKAPI_ATTR void VKAPI_CALL
 wrapper_noop_CmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer,
                                         const VkDebugUtilsLabelEXT *pLabelInfo)
 {
 }
 
-static VKAPI_ATTR void VKAPI_CALL
+VKAPI_ATTR void VKAPI_CALL
 wrapper_noop_QueueBeginDebugUtilsLabelEXT(VkQueue queue,
                                          const VkDebugUtilsLabelEXT *pLabelInfo)
 {
 }
 
-static VKAPI_ATTR void VKAPI_CALL
+VKAPI_ATTR void VKAPI_CALL
 wrapper_noop_QueueEndDebugUtilsLabelEXT(VkQueue queue)
 {
 }
 
-static VKAPI_ATTR void VKAPI_CALL
+VKAPI_ATTR void VKAPI_CALL
 wrapper_noop_QueueInsertDebugUtilsLabelEXT(VkQueue queue,
                                           const VkDebugUtilsLabelEXT *pLabelInfo)
 {

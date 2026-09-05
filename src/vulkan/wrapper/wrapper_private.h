@@ -112,3 +112,25 @@ wrapper_device_memory_create(struct wrapper_device *device,
 
 void
 wrapper_device_memory_destroy(struct wrapper_device_memory *mem);
+
+/* Local no-ops for EXT_debug_utils device entry points the Mali blob does
+ * not export (defined in wrapper_device.c). */
+VKAPI_ATTR VkResult VKAPI_CALL
+wrapper_noop_SetDebugUtilsObjectNameEXT(VkDevice device,
+                                        const VkDebugUtilsObjectNameInfoEXT *pNameInfo);
+VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_CmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer,
+                                       const VkDebugUtilsLabelEXT *pLabelInfo);
+VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_CmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer);
+VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_CmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer,
+                                        const VkDebugUtilsLabelEXT *pLabelInfo);
+VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_QueueBeginDebugUtilsLabelEXT(VkQueue queue,
+                                         const VkDebugUtilsLabelEXT *pLabelInfo);
+VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_QueueEndDebugUtilsLabelEXT(VkQueue queue);
+VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_QueueInsertDebugUtilsLabelEXT(VkQueue queue,
+                                          const VkDebugUtilsLabelEXT *pLabelInfo);

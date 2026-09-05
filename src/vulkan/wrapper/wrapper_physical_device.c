@@ -68,6 +68,23 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 wrapper_wsi_proc_addr(VkPhysicalDevice physicalDevice, const char *pName)
 {
    VK_FROM_HANDLE(vk_physical_device, pdevice, physicalDevice);
+   /* Same NULL-dispatch trap as wrapper_GetDeviceProcAddr: the blob exports
+    * no EXT_debug_utils entry points, and mesa WSI resolves its label call
+    * through this hook. Serve local no-ops so WRAPPER_NO_WSI_LABEL is dead. */
+   if (!strcmp(pName, "vkSetDebugUtilsObjectNameEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_SetDebugUtilsObjectNameEXT;
+   if (!strcmp(pName, "vkCmdBeginDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_CmdBeginDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkCmdEndDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_CmdEndDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkCmdInsertDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_CmdInsertDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkQueueBeginDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_QueueBeginDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkQueueEndDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_QueueEndDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkQueueInsertDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_QueueInsertDebugUtilsLabelEXT;
    return vk_instance_get_proc_addr_unchecked(pdevice->instance, pName);
 }
 
