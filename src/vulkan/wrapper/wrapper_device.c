@@ -10,6 +10,53 @@
 #include "vk_util.h"
 #include "util/list.h"
 #include "util/simple_mtx.h"
+#include <string.h>
+
+/* The Mali blob exports no EXT_debug_utils device entry points, while mesa
+ * WSI calls SetDebugUtilsObjectNameEXT unconditionally when creating the
+ * swapchain blit context (wsi_label_cmd_buffer) — a NULL jump without these.
+ * No-op them locally: labels are debug-only metadata the blob would ignore
+ * anyway. This makes WRAPPER_NO_WSI_LABEL unnecessary. */
+static VKAPI_ATTR VkResult VKAPI_CALL
+wrapper_noop_SetDebugUtilsObjectNameEXT(VkDevice device,
+                                        const VkDebugUtilsObjectNameInfoEXT *pNameInfo)
+{
+   return VK_SUCCESS;
+}
+
+static VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_CmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer,
+                                       const VkDebugUtilsLabelEXT *pLabelInfo)
+{
+}
+
+static VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_CmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer)
+{
+}
+
+static VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_CmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer,
+                                        const VkDebugUtilsLabelEXT *pLabelInfo)
+{
+}
+
+static VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_QueueBeginDebugUtilsLabelEXT(VkQueue queue,
+                                         const VkDebugUtilsLabelEXT *pLabelInfo)
+{
+}
+
+static VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_QueueEndDebugUtilsLabelEXT(VkQueue queue)
+{
+}
+
+static VKAPI_ATTR void VKAPI_CALL
+wrapper_noop_QueueInsertDebugUtilsLabelEXT(VkQueue queue,
+                                          const VkDebugUtilsLabelEXT *pLabelInfo)
+{
+}
 
 const struct vk_device_extension_table wrapper_device_extensions =
 {
@@ -255,6 +302,20 @@ wrapper_GetDeviceQueue2(VkDevice _device, const VkDeviceQueueInfo2* pQueueInfo,
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 wrapper_GetDeviceProcAddr(VkDevice _device, const char* pName) {
    VK_FROM_HANDLE(wrapper_device, device, _device);
+   if (!strcmp(pName, "vkSetDebugUtilsObjectNameEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_SetDebugUtilsObjectNameEXT;
+   if (!strcmp(pName, "vkCmdBeginDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_CmdBeginDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkCmdEndDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_CmdEndDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkCmdInsertDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_CmdInsertDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkQueueBeginDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_QueueBeginDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkQueueEndDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_QueueEndDebugUtilsLabelEXT;
+   if (!strcmp(pName, "vkQueueInsertDebugUtilsLabelEXT"))
+      return (PFN_vkVoidFunction)wrapper_noop_QueueInsertDebugUtilsLabelEXT;
    return vk_device_get_proc_addr(&device->vk, pName);
 }
 
